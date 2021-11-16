@@ -1178,6 +1178,7 @@ begin
       write("\C-p")
       write("r")
 #       write("a")
+      close
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt> 0+ ra
