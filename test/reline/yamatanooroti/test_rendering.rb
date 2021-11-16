@@ -1176,11 +1176,8 @@ begin
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("0+\n12345678901234")
       write("\C-p")
-      close
       write(" r")
-      close
       write("a")
-      close
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt> 0+ ra
