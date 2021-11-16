@@ -1182,7 +1182,14 @@ begin
       assert_screen(<<~'EOC')
         Multiline REPL.
         prompt> 0+ ra
-        prompt> 123rand 90123
+        prompt> 123rand 901234
+                   raise
+      EOC
+#       write("a")
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> 0+ ra
+        prompt> 123rand 901234
                    raise
       EOC
     end
