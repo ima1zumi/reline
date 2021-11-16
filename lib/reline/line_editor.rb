@@ -858,7 +858,12 @@ class Reline::LineEditor
           s = ' ' * width
         else
           s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog.column + dialog.width, width)
-          s = padding_space_with_escape_sequences(s, dialog.width)
+          rerender_width = if (dialog.width - calculate_width(s, true)).positive?
+                             dialog.width
+                           else
+                             old_dialog.width - dialog.width + dialog.column - 1
+                           end
+          s = padding_space_with_escape_sequences(s, rerender_width)
         end
         Reline::IOGate.move_cursor_column(dialog.column + dialog.width)
         @output.write "\e[0m#{s}\e[0m"
