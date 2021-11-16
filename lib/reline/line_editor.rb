@@ -646,7 +646,12 @@ class Reline::LineEditor
   end
 
   private def padding_space_with_escape_sequences(str, width)
+#     $stderr.puts "str  : #{str}"
+#     $stderr.puts "width: #{width}"
+#     $stderr.puts "calcw: #{calculate_width(str, true)}"
+#     hoge = width - calculate_width(str, true)
     str + (' ' * (width - calculate_width(str, true)))
+#     str + (' ' * (hoge.negative? ? 0 : hoge))
   end
 
   private def render_each_dialog(dialog, cursor_column)
@@ -743,6 +748,7 @@ class Reline::LineEditor
         end
       end
       str_width = dialog.width - (dialog.scrollbar_pos.nil? ? 0 : @block_elem_width)
+#           $stderr.puts 'b'
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, str_width), str_width)
       @output.write "\e[#{bg_color}m#{str}"
       if dialog.scrollbar_pos and (dialog.scrollbar_pos != old_dialog.scrollbar_pos or dialog.column != old_dialog.column)
@@ -775,6 +781,8 @@ class Reline::LineEditor
   end
 
   private def reset_dialog(dialog, old_dialog)
+#     $stderr.puts "old  : #{old_dialog.contents}"
+#       $stderr.puts "lines: #{dialog.lines_backup}"
     return if dialog.lines_backup.nil? or old_dialog.contents.nil?
     prompt, prompt_width, prompt_list = check_multiline_prompt(dialog.lines_backup[:lines], prompt)
     visual_lines = []
@@ -802,6 +810,7 @@ class Reline::LineEditor
           s = ' ' * old_dialog.width
         else
           s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog.column, old_dialog.width)
+#           $stderr.puts 'b'
           s = padding_space_with_escape_sequences(s, old_dialog.width)
         end
         @output.write "\e[0m#{s}\e[0m"
@@ -820,6 +829,7 @@ class Reline::LineEditor
           s = ' ' * old_dialog.width
         else
           s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog.column, old_dialog.width)
+#           $stderr.puts 'c'
           s = padding_space_with_escape_sequences(s, old_dialog.width)
         end
         @output.write "\e[0m#{s}\e[0m"
@@ -839,6 +849,7 @@ class Reline::LineEditor
           s = ' ' * width
         else
           s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog.column, width)
+#           $stderr.puts 'd'
           s = padding_space_with_escape_sequences(s, dialog.width)
         end
         @output.write "\e[0m#{s}\e[0m"
@@ -857,8 +868,22 @@ class Reline::LineEditor
         if visual_lines[start + i].nil?
           s = ' ' * width
         else
+#           $stderr.puts "visua: #{visual_lines[start + i]}"
           s = Reline::Unicode.take_range(visual_lines[start + i], old_dialog.column + dialog.width, width)
-          s = padding_space_with_escape_sequences(s, dialog.width)
+#           $stderr.puts 'e'
+#           $stderr.puts "old_dialog.width: #{old_dialog.width}"
+#           $stderr.puts "old_dialog.column: #{old_dialog.column}"
+#           $stderr.puts "dialog.width: #{dialog.width}"
+#           $stderr.puts "dialog.column: #{dialog.column}"
+#           nya = visual_lines[start + i].size - s.size
+#           $stderr.puts "nya: #{nya}"
+            if (dialog.width - calculate_width(s, true)).positive?
+              rerender_width = s
+            else
+              rerender_width = old_dialog.width - dialog.width + dialog.column - 1
+            end
+#           render_width = if old_dialog.width > dialog.width + s
+          s = padding_space_with_escape_sequences(s, rerender_width)
         end
         Reline::IOGate.move_cursor_column(dialog.column + dialog.width)
         @output.write "\e[0m#{s}\e[0m"
@@ -900,6 +925,7 @@ class Reline::LineEditor
       if i < visual_lines_under_dialog.size
         Reline::IOGate.move_cursor_column(dialog.column)
         str = Reline::Unicode.take_range(visual_lines_under_dialog[i], dialog.column, dialog.width)
+#           $stderr.puts 'f'
         str = padding_space_with_escape_sequences(str, dialog.width)
         @output.write "\e[0m#{str}\e[0m"
       else

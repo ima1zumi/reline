@@ -1172,6 +1172,21 @@ begin
       EOC
     end
 
+    def test_autocomplete222222
+      start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("0+\n12345678901234")
+      write("\C-p")
+      write(" r")
+      write("a")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> 0+ ra
+        prompt> 123rand 90123
+                   raise
+      EOC
+    end
+
     def write_inputrc(content)
       File.open(@inputrc_file, 'w') do |f|
         f.write content
