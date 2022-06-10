@@ -99,7 +99,7 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
       - name: Install libvterm
         run: |
-          sudo apt install -y libtool-bin
+          sudo apt install -y libtool-bin libncursesw6 libncurses6
           wget http://www.leonerd.org.uk/code/libvterm/libvterm-0.1.4.tar.gz
           tar xvzf libvterm-0.1.4.tar.gz
           cd libvterm-0.1.4
@@ -110,7 +110,5 @@ jobs:
         run:  WITH_VTERM=1 bundle install
       - name: Install latest irb
         run:  gem install irb -f --pre
-      - name: Setup tmate session
-        run: mxschmitt/action-tmate@v3
       - name: rake test_yamatanooroti
         run:  rake test_yamatanooroti
