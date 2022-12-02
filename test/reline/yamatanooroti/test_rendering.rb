@@ -6,7 +6,6 @@ begin
   class Reline::TestRendering < Yamatanooroti::TestCase
     def setup
       puts 'setup'
-      puts self.method_name
       @pwd = Dir.pwd
       suffix = '%010d' % Random.rand(0..65535)
       @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_reline_config_#{$$}_#{suffix}")
@@ -23,6 +22,7 @@ begin
     end
 
     def teardown
+      puts 'teardown'
       FileUtils.rm_rf(@tmpdir)
       ENV['INPUTRC'] = @inputrc_backup
       ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']

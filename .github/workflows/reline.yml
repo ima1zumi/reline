@@ -3,86 +3,6 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  reline:
-    name: >-
-      reline ${{ matrix.os }} ${{ matrix.ruby }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-        ruby: [ 'head', '3.1', '3.0', '2.7', '2.6' ]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby }}
-      - name: Install dependencies
-        run:  bundle install
-      - name: rake test
-        env:
-          TERM: xterm-256color
-        run:  bundle exec rake test
-
-  readline:
-    name: >-
-      readline ${{ matrix.ruby }}  ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - { ruby: head,  os: ubuntu-latest  }
-          - { ruby: head,  os: macos-latest   }
-          - { ruby: mingw, os: windows-latest }
-          - { ruby: mswin, os: windows-latest }
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby }}
-      - name: Install dependencies
-        run:  bundle install
-      - name: Download test readline
-        run:  ruby download-test_readline.rb
-      - name: rake test
-        run:  bundle exec rake test
-      - name: rake ci-test
-        env:
-          TEST_READLINE_OR_RELINE: Reline
-          TERM: xterm-256color
-        run: bundle exec rake ci-test
-
-  irb:
-    name: >-
-      irb ${{ matrix.ruby }}  ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        ruby: [ head ]
-        os: [ ubuntu-latest ]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ${{ matrix.ruby }}
-      - name: Install dependencies
-        run:  bundle install
-      - name: Install reline
-        run:  |
-          rake build
-          rake install
-      - name: Download ruby/irb
-        run:  |
-          git clone https://github.com/ruby/irb
-      - name: Setup ruby/irb
-        run:  |
-          cd irb
-          bundle install
-      - name: Run irb test
-        run:  bundle exec rake test
-
   vterm-yamatanooroti:
     name: >-
       vterm-yamatanooroti ${{ matrix.os }} ${{ matrix.ruby }}
@@ -109,6 +29,6 @@ jobs:
       - name: Install dependencies
         run:  WITH_VTERM=1 bundle install
       - name: Install latest irb
-        run:  gem install irb -v 1.5.0
+        run:  gem install irb -f -v 1.5.0
       - name: rake test_yamatanooroti
         run:  rake test_yamatanooroti
