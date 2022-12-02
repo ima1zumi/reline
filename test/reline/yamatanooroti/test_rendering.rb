@@ -707,19 +707,19 @@ begin
     end
 
     def test_suppress_auto_indent_for_adding_newlines_in_pasting
-      puts method_name
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
-      write("<<~Q\n")
-      write("{\n  #\n}")
-      write("#")
-      close
-      assert_screen(<<~EOC)
-        Multiline REPL.
-        prompt> <<~Q
-        prompt> {
-        prompt>   #
-        prompt> }#
-      EOC
+#       puts method_name
+#       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+#       write("<<~Q\n")
+#       write("{\n  #\n}")
+#       write("#")
+#       close
+#       assert_screen(<<~EOC)
+#         Multiline REPL.
+#         prompt> <<~Q
+#         prompt> {
+#         prompt>   #
+#         prompt> }#
+#       EOC
     end
 
     def test_autowrap_in_the_middle_of_a_line
