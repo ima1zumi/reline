@@ -5,7 +5,8 @@ begin
 
   class Reline::TestRendering < Yamatanooroti::TestCase
     def setup
-      puts method_name
+      puts 'setup'
+      puts self.method_name
       @pwd = Dir.pwd
       suffix = '%010d' % Random.rand(0..65535)
       @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_reline_config_#{$$}_#{suffix}")
