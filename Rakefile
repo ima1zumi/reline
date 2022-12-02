@@ -37,6 +37,7 @@ task "ci-test": ENCODING_LIST.keys.map { |task_name| "ci-#{task_name}" }
 
 
 Rake::TestTask.new(:test_yamatanooroti) do |t|
+  puts 'start yamatanooroti'
   t.libs << 'test'
   t.libs << 'lib'
   #t.loader = :direct

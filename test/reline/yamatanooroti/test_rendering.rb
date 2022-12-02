@@ -5,27 +5,33 @@ begin
 
   class Reline::TestRendering < Yamatanooroti::TestCase
     def setup
+      puts 'setup'
       @pwd = Dir.pwd
       suffix = '%010d' % Random.rand(0..65535)
       @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_reline_config_#{$$}_#{suffix}")
       begin
+        puts 'begin'
         Dir.mkdir(@tmpdir)
       rescue Errno::EEXIST
+        puts 'rescue'
         FileUtils.rm_rf(@tmpdir)
         Dir.mkdir(@tmpdir)
       end
+      puts 'inputrc'
       @inputrc_backup = ENV['INPUTRC']
       @inputrc_file = ENV['INPUTRC'] = File.join(@tmpdir, 'temporaty_inputrc')
       File.unlink(@inputrc_file) if File.exist?(@inputrc_file)
     end
 
     def teardown
+      puts 'teardown'
       FileUtils.rm_rf(@tmpdir)
       ENV['INPUTRC'] = @inputrc_backup
       ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
     end
 
     def test_history_back
+      puts 'test_history_back'
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":a\n")
       write("\C-p")
