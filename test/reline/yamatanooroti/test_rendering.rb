@@ -5,26 +5,23 @@ begin
 
   class Reline::TestRendering < Yamatanooroti::TestCase
     def setup
-      puts 'setup'
+      puts method_name
       @pwd = Dir.pwd
       suffix = '%010d' % Random.rand(0..65535)
       @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_reline_config_#{$$}_#{suffix}")
       begin
-        puts 'begin'
         Dir.mkdir(@tmpdir)
       rescue Errno::EEXIST
         puts 'rescue'
         FileUtils.rm_rf(@tmpdir)
         Dir.mkdir(@tmpdir)
       end
-      puts 'inputrc'
       @inputrc_backup = ENV['INPUTRC']
       @inputrc_file = ENV['INPUTRC'] = File.join(@tmpdir, 'temporaty_inputrc')
       File.unlink(@inputrc_file) if File.exist?(@inputrc_file)
     end
 
     def teardown
-      puts 'teardown'
       FileUtils.rm_rf(@tmpdir)
       ENV['INPUTRC'] = @inputrc_backup
       ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
@@ -1346,6 +1343,7 @@ begin
     end
   end
 rescue LoadError, NameError
+  puts 'LoadError or NameError'
   # On Ruby repository, this test suit doesn't run because Ruby repo doesn't
   # have the yamatanooroti gem.
 end
