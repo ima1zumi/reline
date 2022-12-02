@@ -43,6 +43,7 @@ begin
     end
 
     def test_backspace
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":abc\C-h\n")
       close
