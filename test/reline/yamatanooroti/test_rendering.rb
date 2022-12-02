@@ -29,7 +29,7 @@ begin
     end
 
     def test_history_back
-      puts 'test_history_back'
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":a\n")
       write("\C-p")
@@ -56,6 +56,7 @@ begin
     end
 
     def test_autowrap
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write('01234567890123456789012')
       close
@@ -67,6 +68,7 @@ begin
     end
 
     def test_fullwidth
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":あ\n")
       close
@@ -79,6 +81,7 @@ begin
     end
 
     def test_two_fullwidth
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(":あい\n")
       close
@@ -91,6 +94,7 @@ begin
     end
 
     def test_finish_autowrapped_line
+      puts method_name
       start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("[{'user'=>{'email'=>'a@a', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]\n")
       close
@@ -107,6 +111,7 @@ begin
     end
 
     def test_finish_autowrapped_line_in_the_middle_of_lines
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("[{'user'=>{'email'=>'abcdef@abcdef', 'id'=>'ABC'}, 'version'=>4, 'status'=>'succeeded'}]#{"\C-b"*7}")
       write("\n")
@@ -126,6 +131,7 @@ begin
     end
 
     def test_finish_autowrapped_line_in_the_middle_of_multilines
+      puts method_name
       omit if RUBY_VERSION < '2.7'
       start_terminal(30, 16, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("<<~EOM\n  ABCDEFG\nEOM\n")
@@ -142,6 +148,7 @@ begin
     end
 
     def test_prompt
+      puts method_name
       write_inputrc <<~'LINES'
         "abc": "123"
       LINES
@@ -157,6 +164,7 @@ begin
     end
 
     def test_mode_string_emacs
+      puts method_name
       write_inputrc <<~LINES
         set show-mode-in-prompt on
       LINES
@@ -169,6 +177,7 @@ begin
     end
 
     def test_mode_string_vi
+      puts method_name
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
@@ -185,6 +194,7 @@ begin
     end
 
     def test_original_mode_string_emacs
+      puts method_name
       write_inputrc <<~LINES
         set show-mode-in-prompt on
         set emacs-mode-string [emacs]
@@ -198,6 +208,7 @@ begin
     end
 
     def test_original_mode_string_with_quote
+      puts method_name
       write_inputrc <<~LINES
         set show-mode-in-prompt on
         set emacs-mode-string "[emacs]"
@@ -211,6 +222,7 @@ begin
     end
 
     def test_original_mode_string_vi
+      puts method_name
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
@@ -229,6 +241,7 @@ begin
     end
 
     def test_mode_string_vi_changing
+      puts method_name
       write_inputrc <<~LINES
         set editing-mode vi
         set show-mode-in-prompt on
@@ -243,6 +256,7 @@ begin
     end
 
     def test_prompt_with_escape_sequence
+      puts method_name
       ENV['RELINE_TEST_PROMPT'] = "\1\e[30m\2prompt> \1\e[m\2"
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("123\n")
@@ -256,6 +270,7 @@ begin
     end
 
     def test_prompt_with_escape_sequence_and_autowrap
+      puts method_name
       ENV['RELINE_TEST_PROMPT'] = "\1\e[30m\2prompt> \1\e[m\2"
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("1234567890123\n")
@@ -270,6 +285,7 @@ begin
     end
 
     def test_multiline_and_autowrap
+      puts method_name
       start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def aaaaaaaaaa\n  33333333\n           end\C-a\C-pputs\C-e\e\C-m888888888888888")
       close
@@ -287,6 +303,7 @@ begin
     end
 
     def test_clear
+      puts method_name
       start_terminal(10, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("3\C-l")
       close
@@ -296,6 +313,7 @@ begin
     end
 
     def test_clear_multiline_and_autowrap
+      puts method_name
       start_terminal(10, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def aaaaaa\n  3\n\C-lend")
       close
@@ -308,6 +326,7 @@ begin
     end
 
     def test_nearest_cursor
+      puts method_name
       start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def ああ\n  :いい\nend\C-pbb\C-pcc")
       close
@@ -320,6 +339,7 @@ begin
     end
 
     def test_delete_line
+      puts method_name
       start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def a\n\nend\C-p\C-h")
       close
@@ -331,6 +351,7 @@ begin
     end
 
     def test_last_line_of_screen
+      puts method_name
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("\n\n\n\n\ndef a\nend")
       close
@@ -345,6 +366,7 @@ begin
 
     # c17a09b7454352e2aff5a7d8722e80afb73e454b
     def test_autowrap_at_last_line_of_screen
+      puts method_name
       start_terminal(5, 15, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def a\nend\n\C-p")
       close
@@ -359,6 +381,7 @@ begin
 
     # f002483b27cdb325c5edf9e0fe4fa4e1c71c4b0e
     def test_insert_line_in_the_middle_of_line
+      puts method_name
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("333\C-b\C-b\e\C-m8")
       close
@@ -371,6 +394,7 @@ begin
 
     # 9d8978961c5de5064f949d56d7e0286df9e18f43
     def test_insert_line_in_the_middle_of_line_at_last_line_of_screen
+      puts method_name
       start_terminal(3, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("333333333333333\C-a\C-f\e\C-m")
       close
@@ -382,6 +406,7 @@ begin
     end
 
     def test_insert_after_clear
+      puts method_name
       start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def a\n  01234\nend\C-l\C-p5678")
       close
@@ -393,6 +418,7 @@ begin
     end
 
     def test_foced_newline_insertion
+      puts method_name
       start_terminal(10, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       #write("def a\nend\C-p\C-e\e\C-m  3")
       write("def a\nend\C-p\C-e\e\x0D")
@@ -406,6 +432,7 @@ begin
     end
 
     def test_multiline_incremental_search
+      puts method_name
       start_terminal(6, 25, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def a\n  8\nend\ndef b\n  3\nend\C-s8")
       close
@@ -417,6 +444,7 @@ begin
     end
 
     def test_multiline_incremental_search_finish
+      puts method_name
       start_terminal(6, 25, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def a\n  8\nend\ndef b\n  3\nend\C-r8\C-j")
       close
@@ -428,6 +456,7 @@ begin
     end
 
     def test_binding_for_vi_movement_mode
+      puts method_name
       write_inputrc <<~LINES
         set editing-mode vi
         "\\C-a": vi-movement-mode
@@ -442,6 +471,7 @@ begin
     end
 
     def test_prompt_list_caching
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --prompt-list-cache-timeout 10 --dynamic-prompt}, startup_message: 'Multiline REPL.')
       write("def hoge\n  3\nend")
       close
@@ -454,6 +484,7 @@ begin
     end
 
     def test_broken_prompt_list
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --broken-dynamic-prompt}, startup_message: 'Multiline REPL.')
       write("def hoge\n  3\nend")
       close
@@ -466,6 +497,7 @@ begin
     end
 
     def test_enable_bracketed_paste
+      puts method_name
       omit if Reline::IOGate.win?
       write_inputrc <<~LINES
         set enable-bracketed-paste on
@@ -484,6 +516,7 @@ begin
     end
 
     def test_backspace_until_returns_to_initial
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("ABC")
       write("\C-h\C-h\C-h")
@@ -495,6 +528,7 @@ begin
     end
 
     def test_longer_than_screen_height
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(<<~EOC.chomp)
         def each_top_level_statement
@@ -542,6 +576,7 @@ begin
     end
 
     def test_longer_than_screen_height_with_scroll_back
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(<<~EOC.chomp)
         def each_top_level_statement
@@ -590,6 +625,7 @@ begin
     end
 
     def test_longer_than_screen_height_with_complex_scroll_back
+      puts method_name
       start_terminal(4, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write(<<~EOC.chomp)
         def each_top_level_statement
@@ -638,6 +674,7 @@ begin
     end
 
     def test_update_cursor_correctly_when_just_cursor_moving
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\n  01234678")
       write("\C-p")
@@ -655,6 +692,7 @@ begin
     end
 
     def test_suppress_auto_indent_just_after_pasted
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
       write("def hoge\n  [[\n      3]]\ned")
       write("\C-bn")
@@ -669,6 +707,7 @@ begin
     end
 
     def test_suppress_auto_indent_for_adding_newlines_in_pasting
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
       write("<<~Q\n")
       write("{\n  #\n}")
@@ -684,6 +723,7 @@ begin
     end
 
     def test_autowrap_in_the_middle_of_a_line
+      puts method_name
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def abcdefg; end\C-b\C-b\C-b\C-b\C-b")
       %w{h i}.each do |c|
@@ -698,6 +738,7 @@ begin
     end
 
     def test_terminate_in_the_middle_of_lines
+      puts method_name
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\n  1\n  2\n  3\n  4\nend\n")
       write("\C-p\C-p\C-p\C-e\n")
@@ -712,6 +753,7 @@ begin
     end
 
     def test_dynamic_prompt_returns_empty
+      puts method_name
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dynamic-prompt-returns-empty}, startup_message: 'Multiline REPL.')
       write("def hoge\nend\n")
       close
@@ -725,6 +767,7 @@ begin
     end
 
     def test_reset_rest_height_when_clear_screen
+      puts method_name
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("\n\n\n\C-l3\n")
       close
@@ -736,6 +779,7 @@ begin
     end
 
     def test_meta_key
+      puts method_name
       start_terminal(30, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def ge\M-bho")
       close
@@ -746,6 +790,7 @@ begin
     end
 
     def test_not_meta_key
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("おだんご") # "だ" in UTF-8 contains "\xA0"
       close
@@ -756,6 +801,7 @@ begin
     end
 
     def test_force_enter
+      puts method_name
       start_terminal(30, 120, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\nend\C-p\C-e")
       write("\M-\x0D")
@@ -769,6 +815,7 @@ begin
     end
 
     def test_with_newline
+      puts method_name
       omit if Reline::IOGate.win?
       cmd = %Q{ruby -e 'print(%Q{abc def \\e\\r})' | ruby -I#{@pwd}/lib -rreline -e 'p Reline.readline(%{> })'}
       start_terminal(40, 50, ['bash', '-c', cmd])
@@ -781,6 +828,7 @@ begin
     end
 
     def test_em_set_mark_and_em_exchange_mark
+      puts method_name
       start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("aaa bbb ccc ddd\M-b\M-b\M-\x20\M-b\C-x\C-xX\C-x\C-xY")
       close
@@ -791,6 +839,7 @@ begin
     end
 
     def test_completion_journey_2nd_line
+      puts method_name
       write_inputrc <<~LINES
         set editing-mode vi
       LINES
@@ -805,6 +854,7 @@ begin
     end
 
     def test_completion_journey_with_empty_line
+      puts method_name
       write_inputrc <<~LINES
         set editing-mode vi
       LINES
@@ -818,6 +868,7 @@ begin
     end
 
     def test_simple_dialog
+      puts method_name
       start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
       write('a')
       write('b')
@@ -837,6 +888,7 @@ begin
     end
 
     def test_simple_dialog_at_right_edge
+      puts method_name
       start_terminal(20, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
       write('a')
       write('b')
@@ -856,6 +908,7 @@ begin
     end
 
     def test_autocomplete_at_bottom
+      puts method_name
       start_terminal(15, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('def hoge' + "\C-m" * 10 + "end\C-p  ")
       write('S')
@@ -877,6 +930,7 @@ begin
     end
 
     def test_autocomplete_return_to_original
+      puts method_name
       start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('S')
       write('t')
@@ -892,6 +946,7 @@ begin
     end
 
     def test_autocomplete_target_is_wrapped
+      puts method_name
       start_terminal(20, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('          ')
       write('S')
@@ -907,6 +962,7 @@ begin
     end
 
     def test_simple_dialog_with_scroll_key
+      puts method_name
       start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey}, startup_message: 'Multiline REPL.')
       write('a')
       5.times{ write('j') }
@@ -922,6 +978,7 @@ begin
     end
 
     def test_simple_dialog_scrollbar_with_moving_to_right
+      puts method_name
       start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
       6.times{ write('j') }
       write('a')
@@ -937,6 +994,7 @@ begin
     end
 
     def test_simple_dialog_scrollbar_with_moving_to_left
+      puts method_name
       start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog long,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
       write('a')
       6.times{ write('j') }
@@ -953,6 +1011,7 @@ begin
     end
 
     def test_dialog_with_fullwidth_chars
+      puts method_name
       ENV['RELINE_TEST_PROMPT'] = '> '
       start_terminal(20, 5, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
       6.times{ write('j') }
@@ -970,6 +1029,7 @@ begin
     end
 
     def test_dialog_with_fullwidth_chars_split
+      puts method_name
       ENV['RELINE_TEST_PROMPT'] = '> '
       start_terminal(20, 6, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog fullwidth,scrollkey,scrollbar}, startup_message: 'Multiline REPL.')
       6.times{ write('j') }
@@ -987,6 +1047,7 @@ begin
     end
 
     def test_autocomplete_empty
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('Street')
       close
@@ -997,6 +1058,7 @@ begin
     end
 
     def test_autocomplete
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write('Str')
       close
@@ -1009,6 +1071,7 @@ begin
     end
 
     def test_autocomplete_after_2nd_line
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("def hoge\n  Str")
       close
@@ -1022,6 +1085,7 @@ begin
     end
 
     def test_autocomplete_rerender_under_dialog
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("def hoge\n\n  123456\n  456789\nend\C-p\C-p\C-p  a = Str")
       write('i')
@@ -1037,6 +1101,7 @@ begin
     end
 
     def test_autocomplete_long_with_scrollbar
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
       write('S')
       close
@@ -1062,6 +1127,7 @@ begin
     end
 
     def test_autocomplete_long_with_scrollbar_scroll
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
       write('S' + "\C-i" * 16)
       close
@@ -1087,6 +1153,7 @@ begin
     end
 
     def test_autocomplete_super_long_and_backspace
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-super-long}, startup_message: 'Multiline REPL.')
       shift_tab = [27, 91, 90]
       write('S' + shift_tab.map(&:chr).join)
@@ -1114,6 +1181,7 @@ begin
     end
 
     def test_dialog_callback_returns_nil
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog nil}, startup_message: 'Multiline REPL.')
       write('a')
       close
@@ -1124,6 +1192,7 @@ begin
     end
 
     def test_dialog_narrower_than_screen
+      puts method_name
       start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
       close
       assert_screen(<<~'EOC')
@@ -1140,6 +1209,7 @@ begin
     end
 
     def test_dialog_narrower_than_screen_with_scrollbar
+      puts method_name
       start_terminal(20, 11, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-long}, startup_message: 'Multiline REPL.')
       write('S' + "\C-i" * 3)
       close
@@ -1166,6 +1236,7 @@ begin
     end
 
     def test_dialog_with_fullwidth_scrollbar
+      puts method_name
       start_terminal(20, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple,scrollkey,alt-scrollbar}, startup_message: 'Multiline REPL.')
       close
       assert_screen(<<~'EOC')
@@ -1179,6 +1250,7 @@ begin
     end
 
     def test_rerender_argument_prompt_after_pasting
+      puts method_name
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write('abcdef')
       write("\M-3\C-h")
@@ -1190,6 +1262,7 @@ begin
     end
 
     def test_autocomplete_old_dialog_width_greater_than_dialog_width
+      puts method_name
       start_terminal(40, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-width-long}, startup_message: 'Multiline REPL.')
       write("0+ \n12345678901234")
       write("\C-p")
@@ -1205,6 +1278,7 @@ begin
     end
 
     def test_scroll_at_bottom_for_dialog
+      puts method_name
       start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("\n\n\n\n\n\n")
       write("def hoge\n\n\n\n\n\n\nend\C-p\C-p\C-p\C-e")
@@ -1225,6 +1299,7 @@ begin
     end
 
     def test_clear_dialog_in_pasting
+      puts method_name
       start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("S")
       write("tring ")
@@ -1236,6 +1311,7 @@ begin
     end
 
     def test_prompt_with_newline
+      puts method_name
       ENV['RELINE_TEST_PROMPT'] = "::\n> "
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\n  3\nend")
@@ -1249,6 +1325,7 @@ begin
     end
 
     def test_dynamic_prompt_with_newline
+      puts method_name
       start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dynamic-prompt-with-newline}, startup_message: 'Multiline REPL.')
       write("def hoge\n  3\nend")
       close
@@ -1261,6 +1338,7 @@ begin
     end
 
     def test_clear_dialog_when_just_move_cursor_at_last_line
+      puts method_name
       start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("class A\n  3\nend\n")
       write("\C-p\C-p\C-p\C-e\C-hS")
@@ -1278,6 +1356,7 @@ begin
     end
 
     def test_clear_dialog_when_adding_new_line_to_end_of_buffer
+      puts method_name
       start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("class A\n  def a\n    3\n  end\nend")
       write("\n")
@@ -1295,6 +1374,7 @@ begin
     end
 
     def test_insert_newline_in_the_middle_of_buffer_just_after_dialog
+      puts method_name
       start_terminal(10, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("class A\n  def a\n    3\n  end\nend")
       write("\n")
@@ -1316,6 +1396,7 @@ begin
     end
 
     def test_incremental_search_on_not_last_line
+      puts method_name
       start_terminal(10, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("def abc\nend\n")
       write("def def\nend\n")
