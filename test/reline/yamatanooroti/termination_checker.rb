@@ -19,8 +19,11 @@ end
 
 class AutoIndent < RubyLex
   def initialize
+    p 'aa'
     set_input(self)
+    p 'ab'
     context = Struct.new(:auto_indent_mode, :workspace).new(true, nil)
+    p 'ac'
     set_auto_indent(context)
   end
 
