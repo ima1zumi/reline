@@ -650,7 +650,7 @@ begin
     end
 
     def test_suppress_auto_indent_just_after_pasted
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\n  [[\n      3]]\ned")
       write("\C-bn")
       close
@@ -664,7 +664,7 @@ begin
     end
 
     def test_suppress_auto_indent_for_adding_newlines_in_pasting
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("<<~Q\n")
       write("{\n  #\n}")
       write("#")
