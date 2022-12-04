@@ -30,7 +30,7 @@ begin
 
     def test_suppress_auto_indent_just_after_pasted
       puts 'a'
-      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --auto-indent}, startup_message: 'Multiline REPL.')
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       puts 'b'
       write("def hoge\n  [[\n      3]]\ned")
       puts 'c'
