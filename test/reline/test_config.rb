@@ -216,6 +216,32 @@ class Reline::Config::Test < Reline::TestCase
     end
   end
 
+  def test_if_with_mode
+    @config.read_lines(<<~LINES.lines)
+      $if mode=vi
+        "\C-e": history-search-backward
+      $else
+        "\C-f": history-search-forward
+      $endif
+    LINES
+
+    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
+    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+    assert_equal({[6] => :history_search_forward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+  end
+
+  def test_if_with_mode_nothing_else
+    @config.read_lines(<<~LINES.lines)
+      $if mode=emacs
+        "\C-e": history-search-backward
+      $endif
+    LINES
+
+    assert_equal({[5] => :history_search_backward}, @config.instance_variable_get(:@additional_key_bindings)[:emacs])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_insert])
+    assert_equal({}, @config.instance_variable_get(:@additional_key_bindings)[:vi_command])
+  end
+
   def test_unclosed_if
     e = assert_raise(Reline::Config::InvalidInputrc) do
       @config.read_lines(<<~LINES.lines, "INPUTRC")

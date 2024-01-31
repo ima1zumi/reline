@@ -56,6 +56,7 @@ class Reline::Config
     @skip_section = nil
     @if_stack = nil
     @editing_mode_label = :emacs
+    @editing_mode_section = nil
     @keymap_label = :emacs
     @keymap_prefix = []
     @key_actors = {}
@@ -214,9 +215,16 @@ class Reline::Config
         next
       when /\s*("#{KEYSEQ_PATTERN}+")\s*:\s*(.*)\s*$/o
         key, func_name = $1, $2
+        func_name = func_name.split.first
         keystroke, func = bind_key(key, func_name)
         next unless keystroke
-        @additional_key_bindings[@keymap_label][@keymap_prefix + keystroke] = func
+
+        if @editing_mode_section == 'vi'
+          @additional_key_bindings[:vi_insert][@keymap_prefix + keystroke] = func
+          @additional_key_bindings[:vi_command][@keymap_prefix + keystroke] = func
+        else
+          @additional_key_bindings[@keymap_label][@keymap_prefix + keystroke] = func
+        end
       end
     end
     unless @if_stack.empty?
@@ -232,7 +240,10 @@ class Reline::Config
     when 'if'
       condition = false
       case args
-      when 'mode'
+      when /^mode=(vi|emacs)$/
+        condition = true
+        editing_mode = args.sub(/^mode=/, '')
+        @editing_mode_section = editing_mode == 'emacs' ? 'emacs' : 'vi'
       when 'term'
       when 'version'
       else # application name
@@ -245,11 +256,18 @@ class Reline::Config
       if @if_stack.empty?
         raise InvalidInputrc, "#{file}:#{no}: unmatched else"
       end
+      if @editing_mode_section
+        @editing_mode_section = @editing_mode_section == 'emacs' ? 'vi' : 'emacs'
+      end
+      if @editing_mode_section == 'vi' || @editing_mode_section == 'emacs'
+        @skip_section = true
+      end
       @skip_section = !@skip_section
     when 'endif'
       if @if_stack.empty?
         raise InvalidInputrc, "#{file}:#{no}: unmatched endif"
       end
+      @editing_mode_section = nil
       @skip_section = @if_stack.pop
     when 'include'
       read(File.expand_path(args))
