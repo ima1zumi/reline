@@ -1,0 +1,3 @@
+$if mode=emacs
+  "\C-a": history-search-backward           # CTRL + E
+$endif
