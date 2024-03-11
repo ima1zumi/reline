@@ -6,6 +6,7 @@ require 'tempfile'
 class Reline::LineEditor
   # TODO: undo
   # TODO: Use "private alias_method" idiom after drop Ruby 2.5.
+  # MEMO: lineは使うのをやめた。カーソルがある行かカーソルがあった行の文字列かnilと扱いがよくわからなかったため削除
   attr_reader :byte_pointer
   attr_accessor :confirm_multiline_termination_proc
   attr_accessor :completion_proc
@@ -14,6 +15,7 @@ class Reline::LineEditor
   attr_accessor :prompt_proc
   attr_accessor :auto_indent_proc
   attr_accessor :dig_perfect_match_proc
+  # NOTE: pre_input_hookの呼び出しはreline.rb側に移動
   attr_writer :output
 
   VI_MOTIONS = %i{
@@ -46,6 +48,25 @@ class Reline::LineEditor
     PERFECT_MATCH = :perfect_match
   end
 
+  # NOTE: cursor_y、base_yとか最後にレンダリングしたものたちの情報がStructにまとめられるようになった。
+  # MEMO:
+  # RenderedScreenが更新されるところ: レンダリング系
+  # - handle_cleared
+  # - reset
+  #   - reset_variables
+  #   - @rendered_screen.base_y = Reline::IOGate.cursor_pos.y
+  # - resize
+  # - set_signal_handlers
+  # - reset_variables
+  # - clear_rendered_lines
+  # - print_nomultiline_prompt
+  # - render_differential
+  #
+  # RenderedScreenが使われるところ
+  # - render_differential
+  # - rest_height
+  # - resize
+  # - clear_rendered_lines
   RenderedScreen = Struct.new(:base_y, :lines, :cursor_y, keyword_init: true)
 
   CompletionJourneyData = Struct.new(:preposing, :postposing, :list, :pointer)
@@ -57,6 +78,7 @@ class Reline::LineEditor
   def initialize(config, encoding)
     @config = config
     @completion_append_character = ''
+    # MEMO: 多分ここで取るのが都合がよかったからここで取る
     @screen_size = Reline::IOGate.get_screen_size
     reset_variables(encoding: encoding)
   end
@@ -72,6 +94,8 @@ class Reline::LineEditor
     @in_pasting = in_pasting
   end
 
+  # MEMO: ここにあったsimplified_rendering?は色が消えるなどの問題があったため削除
+
   private def check_mode_string
     if @config.show_mode_in_prompt
       if @config.editing_mode_is?(:vi_command)
@@ -84,17 +108,22 @@ class Reline::LineEditor
         '?'
       end
     end
+    # MEMO: @prev_mode_string は未使用のため削除。それに伴い、 mode_string を変数に入れなくて良くなったので削除
   end
 
+  # MEMO: force_recalcはワークアラウンドだったのでリファクタリングで不要になり削除
   private def check_multiline_prompt(buffer)
     if @vi_arg
       prompt = "(arg: #{@vi_arg}) "
     elsif @searching_prompt
       prompt = @searching_prompt
+      # MEMO: @rerender_all はレンダリングとバッファ処理を両方やっていたので削除して分割した（はず）
     else
       prompt = @prompt
     end
+    # MEMO: simplified_rendering?関係の処理削除
     if @prompt_proc
+      # MEMO: このあたりの処理はリファクタリングしたのと、プロンプトをキャッシュする理由がなかったので削除
       prompt_list = @prompt_proc.(buffer).map { |pr| pr.gsub("\n", "\\n") }
       prompt_list.map!{ prompt } if @vi_arg or @searching_prompt
       prompt_list = [prompt] if prompt_list.empty?
@@ -112,12 +141,15 @@ class Reline::LineEditor
     else
       mode_string = check_mode_string
       prompt = mode_string + prompt if mode_string
+      # MEMO: [prompt, prompt_width, nil] を返していたがwidthは変わりうる値なのでやめた。promptはprompt_listにまとめた
       [prompt] * buffer.size
     end
   end
 
   def reset(prompt = '', encoding:)
+    # MEMO: @rest_heightはRenderedScreen.base_yで置き換え
     @screen_size = Reline::IOGate.get_screen_size
+    # MEMO: @screen_height は計算可能なため削除
     reset_variables(prompt, encoding: encoding)
     @rendered_screen.base_y = Reline::IOGate.cursor_pos.y
     Reline::IOGate.set_winch_handler do
@@ -150,17 +182,27 @@ class Reline::LineEditor
     return unless @resized
 
     @screen_size = Reline::IOGate.get_screen_size
+    # MEMO: `@rest_height` は削除
+    # MEMO: @resized はSIGWINCHを受け取ったときにtrueになる。ここは必ず @resized == true なので、 @resized = false に戻す
     @resized = false
+    # MEMO: カーソル位置を画面内に描画する
     scroll_into_view
+    # MEMO: resizeなので、renderedされたものを再レンダリングする必要がある. 先に移動させておいて描画可能範囲などをみれるようにする
     Reline::IOGate.move_cursor_up @rendered_screen.cursor_y
+    # MEMO: 現在のスクリーン情報の保存
     @rendered_screen.base_y = Reline::IOGate.cursor_pos.y
     @rendered_screen.lines = nil
     @rendered_screen.cursor_y = 0
+    # TODO: 連続してsignalが来たときに複数回renderされてそうだが、resize時のレンダリング崩れはわりとどうしようもなさそうなので保留
     render_differential
   end
 
+  # MEMO: reline.rbからread_ioする前の初期処理として呼ばれる
   def set_signal_handlers
+    # MEMO: ブロック内はSIGINTが飛んできたときの終了処理
+    # `@old_trap` にはSIGINTにtrapされていた処理が入る
     @old_trap = Signal.trap('INT') {
+      # MEMO: contentsとtrap_keyを削除
       clear_dialogs
       scrolldown = render_differential
       Reline::IOGate.scroll_down scrolldown
@@ -205,12 +247,15 @@ class Reline::LineEditor
     @completion_journey_data = nil
     @completion_state = CompletionState::NORMAL
     @perfect_matched = nil
+    # MEMO: no autocompleteのときに使う補完リスト
     @menu_info = nil
     @searching_prompt = nil
     @first_char = true
+    # MEMO: `@add_newline_to_end_of_buffer`はrerenderで使われていたが削除された
     @just_cursor_moving = false
     @eof = false
     @continuous_insertion_buffer = String.new(encoding: @encoding)
+    # MEMO: `@buffer_of_lines` のうち、一番上から描画可能範囲までの高さ(Reline#614のdescriptionの画像参照)
     @scroll_partial_screen = 0
     @drop_terminate_spaces = false
     @in_pasting = false
@@ -222,6 +267,7 @@ class Reline::LineEditor
     reset_line
   end
 
+  # MEMO: readlineとreadmultilineの終了処理から呼ばれる。入力を消して後片付けするために必要
   def reset_line
     @byte_pointer = 0
     @buffer_of_lines = [String.new(encoding: @encoding)]
@@ -239,13 +285,18 @@ class Reline::LineEditor
     @is_multiline = false
   end
 
+  # MEMO: このへんにあったcalculate_height_by_linesは高さ計算系がwrapped_linesに統合されたことで削除
+
   private def insert_new_line(cursor_line, next_line)
     @buffer_of_lines.insert(@line_index + 1, String.new(next_line, encoding: @encoding))
     @buffer_of_lines[@line_index] = cursor_line
     @line_index += 1
     @byte_pointer = 0
+    # MEMO: オートインデントが有効かつペースト中ではない場合
     if @auto_indent_proc && !@in_pasting
+      # MEMO: 挿入される行が空の場合
       if next_line.empty?
+        # MEMO: インデントを計算してそのレベルに応じて空白を追加
         (
           # For compatibility, use this calculation instead of just `process_auto_indent @line_index - 1, cursor_dependent: false`
           indent1 = @auto_indent_proc.(@buffer_of_lines.take(@line_index - 1).push(''), @line_index - 1, 0, true)
@@ -262,14 +313,21 @@ class Reline::LineEditor
     end
   end
 
+  # MEMO: ここにあったcalculate_height_by_widthは呼び出し元削除により消えた
+
   private def split_by_width(str, max_width)
     Reline::Unicode.split_by_width(str, max_width, @encoding)
   end
 
+  # MEMO: ここにあったscroll_downはReline::IOGate.scroll_downを直接呼び出すようになったので削除
+  # MEMO: ここにあったmove_cursor_upはReline::IOGate.move_cursor_upを直接呼び出すようになったので削除
+
   def current_byte_pointer_cursor
+    # MEMO: current_lineからbyte_pointerを使ってカーソル位置を返す
     calculate_width(current_line.byteslice(0, @byte_pointer))
   end
 
+  # MEMO: 前からあるけど引数が変わったので別物. 未使用変数などを削除してスッキリ
   private def calculate_nearest_cursor(cursor)
     line_to_calc = current_line
     new_cursor_max = calculate_width(line_to_calc)
@@ -305,6 +363,8 @@ class Reline::LineEditor
     @byte_pointer = new_byte_pointer
   end
 
+  # MEMO: ここにあったrerender_all, rerenderはリファクタで削除
+
   def with_cache(key, *deps)
     cached_deps, value = @cache[key]
     if cached_deps != deps
@@ -313,12 +373,39 @@ class Reline::LineEditor
     value
   end
 
+  # MEMO: whole_lines, finished? をキーにしたキャッシュを呼ぶ。キャッシュがないか変更があった場合にmodify_linesを呼び出す
+  # modify_linesはIRBの色付けとかdebug.gemの表示してる文字とか
+  # 以下引用
+  # > modified_linesのキャッシュする理由
+  # >
+  # > ↓みたいなことをしたくなかったから
+  # > def render
+  # >   # renderの最初で計算しておく
+  # >   modified_lines = calculate_modified_lines
+  # >   このローカル変数をいろんなメソッドに引き渡す
+  # >   @modified_lines = modified_lines # 引き渡すの大変だからインスタンス変数に入れてしまう
+  # > end
+  # >
+  # >
+  # > modified_linesメソッドを呼ぶと、必要とあらば再計算するし、その必要がなければ前の結果を返してくれるので楽
+  # > 2. 再度renderされた時に変化していないことが多い(カーソルの移動など)
+  # > 以前 @just_cursor_moving で計算スキップしてたのと同等のことを自然に実現できる
+  # > 3. Reactの文化
+  # > 重い処理はとりあえず
+  # >
+  # > const theValue = useMemo(()=>{calculation}, [deps])
+  # > // 別のcomponentでも
+  # > const anotherValue = useMemo(()=>{calculation}, [theValue, anotherDep])
+  # >
+  # >
+  # > って感じでやったりするのを真似た
   def modified_lines
     with_cache(__method__, whole_lines, finished?) do |whole, complete|
       modify_lines(whole, complete)
     end
   end
 
+  # MEMO: `@vi_arg`はVi commandモードのときに数字を押して移動させる機能のときにプロンプトが変化するから必要
   def prompt_list
     with_cache(__method__, whole_lines, @vi_arg, @searching_prompt) do |lines|
       check_multiline_prompt(lines)
@@ -337,16 +424,60 @@ class Reline::LineEditor
     @scroll_partial_screen
   end
 
+  # MEMO:
+  # @buffer_of_lines -> n プロンプトを除く入力中の行
+  # modified_lines -> lines IRBのかららいずで色付けした行情報とか
+  # prompt_list -> prompts プロンプトの配列
+  # width 幅
+  # prev_cache_key 前回実行時のcache_key. 配列で行情報、lines, prompts, width が入っている
+  #   `prev_n, prev_lines, prev_prompts, prev_width = prev_cache_key`
+  # cached_value 前回描画した内容
+  #
+  # 返り値はこんな二重配列。画面の幅で折り返している
+  # `[["irb(main):001> aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","aaaaaaaaaaaaaaaaaa"]]`
+  # `[["irb(main):001> \e[34m\e[1m\e[4mSTDERR\e[0m"]]`
+  # `[["irb(main):002", "> \e[34m\e[1m\e[4mS\e[0m"]]`
+  #
+  # 以下引用
+  # > wrapped_linesのprev_cache_keyについて
+  # > 編集中、入力がどこか1行でも変化があったら、modified_linesの返り値が変わり、wrapped_linesのdepsにmodified_linesが含まれてるのでwrapped_linesの再計算が走るんですが、wrapped_linesのテキスト改行計算する必要があるのはその変化があった1行だけで良いはず。そして全行の改行を全部再計算するとちょっと重い。(千行くらいのコードを貼り付けたときに体感でわかるくらい)
+  # > なので、前回のキャッシュから使いまわせそうな行では前回の値を使い回そうしてます。
+  # >   # 前回のキャッシュ使いまわし無しバージョンはこんな感じ。これをチューニングした結果ああなった
+  # >   def wrapped_lines
+  # >     with_cache(__method__, @buffer_of_lines.size, modified_lines, prompt_list, screen_width) do |n, lines, prompts, width|
+  # >       n.times.map do |i|
+  # >         split_by_width("#{prompts[i]}#{lines[i]}", width).first.compact
+  # >       end
+  # >     end
+  # >   end
+  # > cacheはReactのuseMemoを参考にしてるけど、useMemoを真似るだけだと足りなくて、そしてパフォーマンス効果がありそうなのでこういう仕組みを追加しました。
   def wrapped_lines
     with_cache(__method__, @buffer_of_lines.size, modified_lines, prompt_list, screen_width) do |n, lines, prompts, width, prev_cache_key, cached_value|
+      # MEMO: prev_cache_keyは配列。
       prev_n, prev_lines, prev_prompts, prev_width = prev_cache_key
       cached_wraps = {}
+      # MEMO: 前回のwidthと今回のwidthが同じなら、前回の行数分cached_wrapsに詰め込む
+      # `cached_wraps[["irb(main):001> ", ""]] = ["irb(main:001> "]`
       if prev_width == width
         prev_n.times do |i|
           cached_wraps[[prev_prompts[i], prev_lines[i]]] = cached_value[i]
         end
       end
 
+      # MEMO: 今回の行数分、プロンプトと内容を分割して配列に詰め込んで返す
+      # cached_wrapsがあればそれを使う。なければpromptとlineを連結したものをsplit_by_widthにわたして計算させたものをfirst.compactする
+      #
+      # | > if 1 |
+      # | > 22222|
+      # | 2■     |
+      # | > 3    |
+      # みたいな入力をしているときに、 @buffer_of_lines[1] だけ再計算すればいいはず、みたいなことをやりたいためにキャッシュしている
+      #
+      # 補足
+      # first.compactしているのはsplit_by_widthが変な返し方してくるから...
+      # `split_by_width("#{prompt}#{line}", 10) [["irb(main):", nil, "001> \e[34m\e[1m\e[4mS\e[0m"], 2]`
+      # こんな感じの奇数番に必ずnilが入る謎仕様
+      # TODO: split_by_widthの返り値にnil入れるのやめてfirst.compactしなくていいようにする
       n.times.map do |i|
         prompt = prompts[i]
         line = lines[i]
@@ -355,19 +486,44 @@ class Reline::LineEditor
     end
   end
 
+  # MEMO: overlay_levels: [[0, 5, -1]] こんな感じ
   def calculate_overlay_levels(overlay_levels)
     levels = []
     overlay_levels.each do |x, w, l|
+      # MEMO: fill(val, start, length) なので、l(index or -1)をxからwまで埋める
+      # startが15などの場合、それまでの箇所はnil
+      # ex: overlay_levels = [15, 18, -1] => [nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+      # lはindexか-1
       levels.fill(l, x, w)
     end
     levels
   end
 
   def render_line_differential(old_items, new_items)
+    # MEMO:
+    # old_items: [[0, 15, "irb(main):001> "]] [[コンテンツのレンダリング開始位置、文字幅、コンテンツ]]
+    # レンダリング開始位置は[15, 18, "\e[0m\e[38;2;248;248;242;48;2;40;42;54mSTDERR \e[0m\e[38;2;255;184;108;48;2;98;114;164m█"]みたいになってることもある
+    # new_items: [[0, 16, "irb(main):001> \e[34m\e[1m\e[4mS\e[0m"]] (入力文字はS)
+    # old_items.zip(new_items)
+    # [[[0, 15, "irb(main):001> "], [0, 16, "irb(main):001> \e[34m\e[1m\e[4mS\e[0m"]]]
+    # x: 0, w: 15, c: "irb(main):001> ", nx: 0, _nw: 16, nc: "irb(main):001> \e[34m\e[1m\e[4mS\e[0m"
+    #
+    # NOTE: 旧と新でコンテンツとxが一致していればi=0を詰め込む。一致していなければ-1。xもチェックしているのは動的にプロンプトが変わりうるため。
+    # calculate_overlay_levelsには[[0, 15, -1]]みたいなのを渡す
+    # zipなのでeach_with_indexのindexは必ず0のみ.
     old_levels = calculate_overlay_levels(old_items.zip(new_items).each_with_index.map {|((x, w, c), (nx, _nw, nc)), i| [x, w, c == nc && x == nx ? i : -1] if x }.compact)
+    # NOTE: old_levesが[]でnew_levelsが
+    # [nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    # みたいなときもある。位置15から STDERR と入力、みたいな
     new_levels = calculate_overlay_levels(new_items.each_with_index.map { |(x, w), i| [x, w, i] if x }.compact).take(screen_width)
     base_x = 0
+    # MEMO: new_levels.zip(old_levels) はこういう感じ。
+    # newとoldが一致していれば:skip, 一致していなければn, nがfalseyな値なら:blankを返す。
+    # new_levels.zip(old_levels)
+    # [[0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, nil]]
     new_levels.zip(old_levels).chunk { |n, o| n == o ? :skip : n || :blank }.each do |level, chunk|
+      # MEMO: chunkはこんな感じ
+      # [[0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, -1], [0, nil]]
       width = chunk.size
       if level == :skip
         # do nothing
@@ -376,8 +532,10 @@ class Reline::LineEditor
         @output.write "\e[0m#{' ' * width}"
       else
         x, w, content = new_items[level]
+        # MEMO: x, wが異なる場合はtake_rangeでescape sequenceを考慮してcontentを切る
         content = Reline::Unicode.take_range(content, base_x - x, width) unless x == base_x && w == width
         Reline::IOGate.move_cursor_column base_x
+        # MEMO: @output.write は render_line_differential, print_nomultiline_prompt だけで行っている
         @output.write "\e[0m#{content}\e[0m"
       end
       base_x += width
@@ -390,9 +548,13 @@ class Reline::LineEditor
 
   # Calculate cursor position in word wrapped content.
   def wrapped_cursor_position
+    # MEMO: プロンプトの幅分の空白文字を作成し、それに@byte_pointerまでのcontentを足す
     line = ' ' * calculate_width(prompt_list[@line_index], true) + whole_lines[@line_index].byteslice(0, @byte_pointer)
+    # MEMO: lineをscreen_widthに基づいて折り返す。first.compactしているのはたしか二重配列かつ奇数番がnil返ってくるsplit_by_widthの返り値のため
     wrapped_line_before_cursor = split_by_width(line, screen_width).first.compact
+    # MEMO: @line_indexまでの全ての折り返し行の数を合計し、カーソル位置までの折り返し行の数を加える。-1は、配列のインデックスが0から始まるための調整
     wrapped_cursor_y = wrapped_lines[0...@line_index].sum(&:size) + wrapped_line_before_cursor.size - 1
+    # MEMO: カーソル位置の直前の折り返し行の幅を計算
     wrapped_cursor_x = calculate_width(wrapped_line_before_cursor.last)
     [wrapped_cursor_x, wrapped_cursor_y]
   end
@@ -400,23 +562,53 @@ class Reline::LineEditor
   def clear_dialogs
     @dialogs.each do |dialog|
       dialog.contents = nil
+      # MEMO: clear_dialog_with_trap_keyでやってたのでtrap_keyの削除も追加
       dialog.trap_key = nil
     end
   end
 
+  # MEMO: @dialogsごとにupdate_each_dialogを回すだけ
   def update_dialogs(key = nil)
     wrapped_cursor_x, wrapped_cursor_y = wrapped_cursor_position
     @dialogs.each do |dialog|
       dialog.trap_key = nil
+      # MEMO: private def update_each_dialog(dialog, cursor_column, cursor_row, key = nil)
       update_each_dialog(dialog, wrapped_cursor_x, wrapped_cursor_y - screen_scroll_top, key)
     end
   end
 
+  # MEMO: line_editor.finished?からのみ呼ばれる
+  # finished?がtrueになるのはfinishが呼ばれた場合。finishが呼ばれるのは以下の場合
+  # - input_keyでkey.char.nil?がtrueのとき
+  # - ed_newlineでいくつかの場合
+  # - em_deleteで行頭でem_deleteされた場合
+  # - vi_list_or_eof（なにこれ）
+  # - vi_histedit（なにこれ）
   def render_finished
     clear_rendered_lines
     render_full_content
   end
 
+  # MEMO: clear_rendered_linesしないとrender_full_contentを呼ぶことで描画した内容が再描画されてしまう。また、dialogsを消すために行っている。
+  # 以下引用
+  # > vi_list_or_eof vi_histedit とかは正直わからない
+  # > clear_rendered_lines render_full_contentの二つは、終了処理 render_finished の中身を2つのメソッドに分けただけ、みたいな感じで、どちらも終了処理専用です
+  # > 00:35
+  # > 補完ダイアログが出ている状態でenterを押すと、入力が確定してfinishするんですが、ダイアログは消さないといけないので
+  # > 
+  # > dialogsを全部消したものをrender_differentialで再度描画しなおす
+  # > 描画内容を全部消して、単に普通にputsで全部描画する
+  # > のどちらかが必要になります。どちらもあり。 （編集済み）
+  # > 
+  # > 00:38
+  # > で、どちらもありだし、すでにあるメソッドを使い回す意味でも1が一見良さそうなんですが
+  # > #610
+  # > これを解決できるのは2の方なので2を選んでます。finishしたのなら、一度全部消して、行が長すぎる場合も改行を挿入せずにputsできる。そうすると、テキストをコピーした時に改行が挿入されていなくて便利
+  # > 00:41
+  # > ...って書いてて思い出した。それだけじゃない。
+  # > ターミナルの高さを超える入力をした場合、render_differentialで描画するのは画面に収まる範囲のみ。
+  # > で、Relineはfinishした時点で入力を全てputsしていました。(ターミナルの履歴スクロールして遡ると綺麗に全部表示されてる)
+  # > その挙動を壊さず維持するには全部消して全部putsするのが一番。しかもissue 610も解消できる。 （編集済み）
   def clear_rendered_lines
     Reline::IOGate.move_cursor_up @rendered_screen.cursor_y
     Reline::IOGate.move_cursor_column 0
@@ -449,16 +641,21 @@ class Reline::LineEditor
     # Readline's test `TestRelineAsReadline#test_readline` requires first output to be prompt, not cursor reset escape sequence.
     @rendered_screen.lines = [[[0, Reline::Unicode.calculate_width(prompt, true), prompt]]]
     @rendered_screen.cursor_y = 0
+    # NOTE: Readlineとの互換性のために先にプロンプトをレンダリング
     @output.write prompt
   end
 
   def render_differential
+    # MEMO: uncontrollable areaも含めた折り返しありのwrapped_cursorの位置を取得
     wrapped_cursor_x, wrapped_cursor_y = wrapped_cursor_position
 
+    # MEMO: 前回レンダリングした情報を取ってくる。 [[[0, 15, "irb(main):001> "]]] みたいな。
     rendered_lines = @rendered_screen.lines || []
+    # MEMO: 多分今回描画する行をフォーマットに沿って入れてる
     new_lines = wrapped_lines.flatten[screen_scroll_top, screen_height].map do |l|
       [[0, Reline::Unicode.calculate_width(l, true), l]]
     end
+    # MEMO: `@menu_info`は補完ダイアログを使わないときに使う
     if @menu_info
       @menu_info.list.sort!.each do |item|
         new_lines << [[0, Reline::Unicode.calculate_width(item), item]]
@@ -466,6 +663,15 @@ class Reline::LineEditor
       @menu_info = nil # TODO: do not change state here
     end
 
+    # MEMO: dialog_range でdialogのx,y位置をrangeで取る。y_rangeは1...16、x_rangeは15...33 という感じ。
+    # y_range.each do |row| で dialog_rowsもといnew_linesに詰め込む。 row < 0 か row >= screen_height ならスキップ。
+    # そうでなければ new_lines[row] がなければ初期化し、new_lines[row] に x_rangeの始端、dialogの幅、dialog.contents[row - y_range.begin] でダイアログの中身を詰め込む。y_rangeからy_rangeの始端を引いたindexを使う。
+    # 
+    # new_linesはこんな感じになる
+    # 0: [[0, 16, "irb(main):001> \e[34m\e[1m\e[4mS\e[0m"]]
+    # 1: [nil, [15, 18, "\e[0m\e[38;2;248;248;242;48;2;40;42;54mSTDERR           \e[0m\e[38;2;255;184;108;48;2;98;114;164m█"]]
+    # 2: [nil, [15, 18, "\e[0m\e[38;2;248;248;242;48;2;40;42;54mSTDIN            \e[0m\e[38;2;255;184;108;48;2;98;114;164m█"]]
+    # 3: [nil, [15, 18, "\e[0m\e[38;2;248;248;242;48;2;40;42;54mSTDOUT           \e[0m\e[38;2;255;184;108;48;2;98;114;164m█"]]
     @dialogs.each_with_index do |dialog, index|
       next unless dialog.contents
 
@@ -477,10 +683,14 @@ class Reline::LineEditor
       end
     end
 
+    # MEMO: 前回レンダリングしたカーソルのy位置を保存
     cursor_y = @rendered_screen.cursor_y
     if new_lines != rendered_lines
       Reline::IOGate.hide_cursor
+      # MEMO: レンダリングが必要な行数を出す。new_linesはこれからレンダリングすべき行数、rendered_linesはレンダリングした行数。どちらか大きい方がレンダリングが必要。また、screen_heightを確認して何行レンダリングできるか確認する
+      # screen_heightを使っているので、端末全体を描画可能範囲として捉えている
       num_lines = [[new_lines.size, rendered_lines.size].max, screen_height].min
+      # MEMO: Uncontrollable areaの高さ + レンダリングが必要な行数 > screen_heightの場合、スクロールしてbase_yとcursor_yを更新する
       if @rendered_screen.base_y + num_lines > screen_height
         Reline::IOGate.scroll_down(num_lines - cursor_y - 1)
         @rendered_screen.base_y = screen_height - num_lines
@@ -491,32 +701,51 @@ class Reline::LineEditor
         line_to_render = new_lines[i] || []
         next if rendered_line == line_to_render
 
+        # MEMO: erase_after_cursorなどのためにカーソル位置をこれから触る行に動かしているぽい
         Reline::IOGate.move_cursor_down i - cursor_y
         cursor_y = i
+        # MEMO: 前回レンダリングしていない行にこれからレンダリングする場合、カーソルのx位置を0に戻してその行の内容をすべて削除する
         unless rendered_lines[i]
           Reline::IOGate.move_cursor_column 0
           Reline::IOGate.erase_after_cursor
         end
+        # MEMO: render_line_differentialは描画するものがダイアログなのかどうかとか気にしなくてよい。
+        # いままでレンダリングしたものと、これからレンダリングするものをもらう。
         render_line_differential(rendered_line, line_to_render)
       end
+      # MEMO: こんな感じ
+      # pp @rendered_screen.lines
+      # 0: [[0, 16, "irb(main):001> \e[34m\e[1m\e[4mS\e[0m"]]
+      # 1: [nil, [15, 18, "\e[0m\e[38;2;248;248;242;48;2;40;42;54mSTDERR           \e[0m\e[38;2;255;184;108;48;2;98;114;164m█"]]
+      # 2: [nil, [15, 18, "\e[0m\e[38;2;248;248;242;48;2;40;42;54mSTDIN            \e[0m\e[38;2;255;184;108;48;2;98;114;164m█"]]
+      # 3: [nil, [15, 18, "\e[0m\e[38;2;248;248;242;48;2;40;42;54mSTDOUT           \e[0m\e[38;2;255;184;108;48;2;98;114;164m█"]]
       @rendered_screen.lines = new_lines
       Reline::IOGate.show_cursor
     end
+    # MEMO: カーソルを正しい位置に移動
     y = wrapped_cursor_y - screen_scroll_top
     Reline::IOGate.move_cursor_column wrapped_cursor_x
     Reline::IOGate.move_cursor_down y - cursor_y
     @rendered_screen.cursor_y = y
+    # NOTE: rerenderから来た場合は返り値は使われない
+    # set_signal_handlersだとscroll_downの値として使われる
+    # TODO: ここでカーソル位置返すのわかりにくいなー 前段にするとか、なんかないかしら。
     new_lines.size - y
   end
 
+  # MEMO: vi_to_column の @byte_pointer, @cursor = @line.grapheme_clusters.inject([0, 0]) { |total, gc| からの代替？でつかわれている。wrapped_cursor_y分flattenする？（よくわからない）
+  # wrapped_lines [["irb(main):002", "> \e[34m\e[1m\e[4mS\e[0m"]]
+  # flatten ["irb(main):002", "> \e[34m\e[1m\e[4mS\e[0m"]
   def current_row
     wrapped_lines.flatten[wrapped_cursor_y]
   end
 
+  # MEMO: preferred_dialog_heightから呼ばれる。折り返し考慮したカーソル位置 - 画面外の高さ
   def upper_space_height(wrapped_cursor_y)
     wrapped_cursor_y - screen_scroll_top
   end
 
+  # MEMO: 残り使える画面の高さ？
   def rest_height(wrapped_cursor_y)
     screen_height - wrapped_cursor_y + screen_scroll_top - @rendered_screen.base_y - 1
   end
@@ -595,6 +824,7 @@ class Reline::LineEditor
       @line_editor.screen_height
     end
 
+    # MEMO: 画面の高さの1/5を求める？
     def preferred_dialog_height
       _wrapped_cursor_x, wrapped_cursor_y = @line_editor.wrapped_cursor_position
       [@line_editor.upper_space_height(wrapped_cursor_y), @line_editor.rest_height(wrapped_cursor_y), (screen_height + 6) / 5].max
@@ -670,6 +900,8 @@ class Reline::LineEditor
   end
 
   DIALOG_DEFAULT_HEIGHT = 20
+  
+  # MEMO: ここにあったrender_dialogはrender_dialogsで代替
 
   private def padding_space_with_escape_sequences(str, width)
     padding_width = width - calculate_width(str, true)
@@ -677,12 +909,16 @@ class Reline::LineEditor
     padding_width = 0 if padding_width < 0
     str + (' ' * padding_width)
   end
+  
+  # MEMO: ここにあった range_subtract は呼び出し元が消えたっぽい
 
   private def dialog_range(dialog, dialog_y)
     x_range = dialog.column...dialog.column + dialog.width
     y_range = dialog_y + dialog.vertical_offset...dialog_y + dialog.vertical_offset + dialog.contents.size
     [x_range, y_range]
   end
+
+  # MEMO: ここにあったrender_dialog_changesはrender_line_differentialに吸収された
 
   private def update_each_dialog(dialog, cursor_column, cursor_row, key = nil)
     dialog.set_cursor_pos(cursor_column, cursor_row)
@@ -767,7 +1003,12 @@ class Reline::LineEditor
       end
     end
   end
+  
+  # MEMO: ここにあったclear_dialogはclear_dialogsになった
 
+  # MEMO: @output_modifier_proc はIRBのinput-method:255から渡されたやつ
+  # IRBから渡された場合は実質色つけProc
+  # debug.gemからはこれ https://github.com/ruby/debug/blob/68f7753c024d48e78b6519d790edca048bb2a850/lib/debug/console.rb#L60-L80
   private def modify_lines(before, complete)
     if after = @output_modifier_proc&.call("#{before.join("\n")}\n", complete: complete)
       after.lines("\n").map { |l| l.chomp('') }
@@ -915,6 +1156,7 @@ class Reline::LineEditor
   end
 
   private def run_for_operators(key, method_symbol, &block)
+    # MEMO: waiting_はquoted_insertとかの機能っぽい
     if @waiting_operator_proc
       if VI_MOTIONS.include?(method_symbol)
         old_byte_pointer = @byte_pointer
@@ -1076,6 +1318,7 @@ class Reline::LineEditor
     modified = input_key(key)
     unless @in_pasting
       scroll_into_view
+      # MEMO: @just_cursor_movingも消せそうーと思ったけど、reline.rbから呼ばれてる
       @just_cursor_moving = !modified
       update_dialogs(key)
       @just_cursor_moving = false
@@ -1146,6 +1389,7 @@ class Reline::LineEditor
     end
   end
 
+  # MEMO: scroll_partial_screenを再計算
   def scroll_into_view
     _wrapped_cursor_x, wrapped_cursor_y = wrapped_cursor_position
     if wrapped_cursor_y < screen_scroll_top
@@ -1186,6 +1430,34 @@ class Reline::LineEditor
     result
   end
 
+  # MEMO: オートインデントを行うべきかを判断し、条件に応じてインデントレベルを計算して適用する。カーソル位置も調整する
+  # cursor_dependentはカーソルの現在位置に依存するかを指定
+  # process_auto_indentの cursor_dependent: false はどういうときに必要になるか
+  # 以下引用
+  # > if true
+  # >   aaaaa[ここで改行]bbbbb
+  # > end
+  # >
+  # > if true
+  # >   aaaaa
+  # >  [ここでDELETE]bbbbb
+  # > この2つのケースで、bbbbbの行のインデントが前者では2に、後者では0になって欲しい。どちらもキー入力直後のbyte_pointerは0だけど、それだとIRBはどちらのケースか区別つかなくて困る
+  # > なので、前者はカーソル位置に依存しないインデントをしたいわけだから、auto_indent_procにはbyte_pointerの代わりにline.bytesizeを渡すようにしています。(何か数値を渡すAPIなので。カーソルが行末にあると思ってインデント計算してくれ)
+  # > 後者では、byte_pointer=0を渡す。(IRB「カーソルより前に /\A\s*/ しかないってことはインデントの空白自体を追加したり消したりしたんだな、オートインデントしないでおこう」)
+  # > auto_indent_proc=->(lines, line_index, byte_pointer, added_newline){} がnilを返すと、一つ前の行のインデントを使うか現在のインデント変えないか、そんな感じの実装になっていて、(ただしadded_newlineがfalseの時のみnil返せる)
+  # >でも実際nilを返すとどうやってもインデントうまくできないケースがあって、ちゃんと作るとauto_indent_procは常にnumberを返すことになる
+  # > というのがIRBのインデント不具合調査してる時に気づいたこと
+  #
+  # カーソル位置によってどうインデントを計算したいかが変わるからauto_indent_procに何を渡すかの制御のために使われてるってことですか？
+  #
+  # > カーソル位置によって変わり得るケース(byte_pointerを渡す)もあるし、カーソル位置無関係のインデントの値が欲しいケースもある
+  # >
+  # > 行の途中に改行を挿入する(2行)
+  # > 入力末尾に改行を追加する(2行)
+  # > 入力末尾ではない行末に改行を追加する(2行)
+  # > 行頭でdeleteを押して2行を1行にする
+  # > 行の途中の文字を追加したり消したりする
+  # > と、雑に合計8パターンくらいインデントのパターンがあって、その中に一部共通のものもあって、...元の挙動を壊さずにバグも直しつつなんかまとめたらああなった
   private def process_auto_indent(line_index = @line_index, cursor_dependent: true, add_newline: false)
     return if @in_pasting
     return unless @auto_indent_proc
@@ -1198,6 +1470,7 @@ class Reline::LineEditor
     @buffer_of_lines[line_index] = ' ' * new_indent + line.lstrip
     if @line_index == line_index
       old_indent = line[/\A */].size
+      # MEMO: インデント計算
       @byte_pointer = [@byte_pointer + new_indent - old_indent, 0].max
     end
   end

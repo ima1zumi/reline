@@ -57,6 +57,7 @@ class Reline::GeneralIO
   end
 
   def self.get_screen_size
+    # MEMO: テストで[1,1]を上書きしていて、[1,1]で嬉しいことはなさそうなので変更
     [24, 80]
   end
 

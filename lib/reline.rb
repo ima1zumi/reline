@@ -78,6 +78,7 @@ module Reline
       @dialog_proc_list = {}
       yield self
       @completion_quote_character = nil
+      # NOTE: `@bracketed_paste_finished` は未実装なので削除. ref: https://github.com/ruby/reline/pull/635
     end
 
     def io_gate
@@ -277,12 +278,19 @@ module Reline
           Reline::HISTORY << whole_buffer
         end
 
+        # NOTE: eof?がtrueになるのは以下の場合
+        # 1. input_keyがnilかつ@first_charがtrueの場合
+        # 2. em_deleteで行頭で削除した場合とか
+        # 3. vi_list_or_eof
         if line_editor.eof?
           line_editor.reset_line
+          # NOTE: C-dで止めたときにnilを評価してIRBに返すため. これを入れないと空文字が返り、IRBが終わらない
           nil
         else
+          # MEMO: `whole_lines.join("\n")`
           whole_buffer
         end
+        # MEMO: 返り値は.irb_historyへのpushと終了判定に使われる
       end
     end
 
@@ -329,6 +337,9 @@ module Reline
       line_editor.prompt_proc = prompt_proc
       line_editor.auto_indent_proc = auto_indent_proc
       line_editor.dig_perfect_match_proc = dig_perfect_match_proc
+      # NOTE: pre_input_hook はプロンプト表示後inputの表示前にフックできる機能。
+      # readlineの機能で、入力した文字を読み込む前に呼び出す
+      # 描画するテストがたりてなさそう
       pre_input_hook&.call
       @dialog_proc_list.each_pair do |name_sym, d|
         line_editor.add_dialog_proc(name_sym, d.dialog_proc, d.context)
@@ -349,6 +360,7 @@ module Reline
         loop do
           read_io(config.keyseq_timeout) { |inputs|
             line_editor.set_pasting_state(io_gate.in_pasting?)
+            # NOTE: input_keyとrerenderに分かれていたのをupdateメソッドにまとめた
             inputs.each { |key| line_editor.update(key) }
           }
           if line_editor.finished?
